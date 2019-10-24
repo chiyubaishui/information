@@ -29,6 +29,21 @@ python：
 		4. 帮助学习 Python 的代码集合包 https://github.com/jtyoui/Jtyoui
 	6. devops：
 		1. 开源运维平台 https://github.com/openspug/spug
+		2. https://github.com/lechat/devops-python-jenkins
+		3.https://github.com/bregman-arie/devops-interview-questions
+		4. https://github.com/voilet/cmdb/blob/master/doc/help.txt
+	7. Django：
+		1. https://github.com/flyhigher139/awesome-github-repo/blob/master/python.md#django
+	8. cmdb和Vue https://github.com/Tender-Liu
+	https://github.com/ywzhou123/EWP_OMS
+	https://github.com/hequan2017/autoops
+	https://github.com/opendevops-cn/codo-cmdb
+	https://github.com/leoiceo/OpenSA
+	https://github.com/hgz6536/opman-django
+				https://github.com/pycook/cmdb
+				https://github.com/Xpitz/pingAdmin
+				https://github.com/py2010/cmdb
+				https://github.com/babywd/Cmdb
 		
 虚拟化：
 	1. Kubernetes中文指南/云原生应用架构实践手册 - https://jimmysong.io/kubernetes-handbook
@@ -42,3 +57,4 @@ python：
 	5. 分享 GitHub 上有趣、入门级的开源项目 https://github.com/521xueweihan/HelloGitHub
 	6. 中国独立开发者项目列表 https://github.com/1c7/chinese-independent-developer
 	7. https://github.com/kon9chunkit/GitHub-Chinese-Top-Charts 发现高分优秀中文项目
+	8. https://www.ctolib.com/

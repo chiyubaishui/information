@@ -1,0 +1,161 @@
+2.1 自定义模板和静态文件位置
+2.1.l 自定义模板位置
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates'),], #定义了模板文件的位置
+        'APP_DIRS': True, #②将APP_DIRS设置为 False 即不再允许 Django 按照默认方式寻找模板文件
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+2.1.2 自定义静态文件位置
+# Static files (CSS, JavaScript, Images) #django中认定的静态文件是什么
+# https://docs.djangoproject.com/en/dev/howto/static-files/
+STATIC_URL = '/static/'
+STATICFILES_DIRS = ( 
+    os.path.join(BASE_DIR, "static"), #，把所有静态文件都放到指定的目录中
+)
+Django的settings配置变量中的 STATICFILES_FINDERS的默认值规定了静态文件的查找顺序和内容。
+2.1.3 通用静态文件和基础模板
+一般来讲，网站的界面可以大致分为上、中、下三个部分。上部就是头部，显示网站的LOGO和导航等；中部就是要显示的具体内容； 下部就是底部，显示网站的版权信息或者诸如联系方式、购买流程等不怎么变的信息或超链接。按照上面的头部(header.html)和底部(footer.html)都可以做成基础模板。
+{% load staticfiles %}是模板中声明引入静态文件的标签，只有使用它，才能使用src="{% static '/images/logo.png' %}"，而不是用 “硬编码”的方式写图片地址。
+href="{% url 'blog:blog_title' %}"> ｝使用了在mysite/urls.py URLconf 中为应用设置的namespace 和相关应用中的name值， 拼接成该应用的入口链接 URL 。这样做同样是要避免"硬编码"。
+在多个app之间，有可能产生同名的url，这个时候避免反转url的时候混淆，在应用url中定义 app_name；
+一个app，可以创建多个url映射到一个app中，所以就会产生一个问题，在做反转的时候，如果不使用命名空间，就会混淆，为了避免这个问题。我们可以使用实例命名空间。在include函数中添加namespace即可
+2.1.4 知识点
+1. 模板:Django 中的模板本质上也是一个独立的文本文件.
+2. contexts contexts 是一个包含了键值对的字典，例如前面曾经使用过的return render(request,”blog/content.html”,{”article”:article,”publish”：pub ｝），这条代码通过render（）函数声明了所使用的模板（ ”blog/content.html”）和contexts（｛”article”：article，”publish”：pub ｝）。在contexts 的键值对中，“键” 是即将在模板中使用的变量，这个变量可以引用任何在视图函数中确定的对象。
+3. 模板： for 和if 在模板中使用通过contexts 传入模板的数据对象。一般情况下有两类语法， 一类是单独的变量，也称为变量标签：另一类是块命令，也称为块标签。
+Django 模板提供了默认的｛ { forloop.counter } ｝从1开始计数的方式，不需要视图函数中的contexts 提供forloop 键值对，只要是模板中的循环，都可以使用这样的方式实现对被循环内容的计数功能。另外， 还有｛ { forloop.counterO } ｝是从零开始计数。
+2.2 用户登录
+2.2.1创建应用
+为了实现用户登录、退出、注册等功能，从而进行用户管理，我们要创建一个新的应用。python manage.py startapp account,之后依然是在./mysite/settings.py 中对新应用进行配置，接着就是在./mysite/urls.py 中进行URL 配置,最后在./account 目录中创建urls.py文件，并设置好本应用中的路径。
+url (r'^login/$',views.user_login, name ＝"user_login")
+2.2.2 理解表单类
+用户登录框用行话说就是表单。这个表单可以用纯粹前端的HTML代码来编写，也可以用我们下面要介绍的表单类来编写。
+在./account 目录中创建一个文件forms.py，这个文件是专门存放各种与表单有关的类的，登录表单相关的类的代码如下。
+from django import forms
+
+class LoginForm(forms.Form):
+    username = forms.CharField()
+    password = forms.CharField(widget=forms.PasswordInput)
+mysite$ python manage.py shell
+>> from account.forms import LoginForm
+>> login_form = Login_Form() #创建这个类的实例,未绑定（数据）实例，
+>> print{login_form)  #结果就是HTML 代码
+LoginForm中的username = forms.CharField()就是<input name=’ username' type='text' .. . >，而在password = forms.CharField( widget=fonns.Passwordlnput）中，因为使用了widget=forms.Passwordlnput,故其对应<input type ＝”password” ．．．>。在表单类的属性值中，通常使用widget 来规定相对应的HTML元素的类型，如本例中规定input的类型为password.
+对象除了属性，还有一些方法
+>>> login_form.is_bound #False
+>>> data_login = ｛"username":"xuquan","password":"paic1234"｝
+>>> lf = LoginForm(data_login)
+>>> lf.is_valid()  #当前端提交到后端的数据是符合表单类属性要求的，那么is_valid()返回True ，这个方法用来检验数据是否合法。
+>> lf.cleaned data
+｛"username":"xuquan","password":"paic1234"｝#cleaned_data 是实例的属性，它以字典形式返回实例的具体数据，即经过检验之后的属性及其值。如果传入的某项数据不合法，则在cleaned data 的结果中不予显示。
+2.2.3 登录的视图函数
+分析：一个是响应GET请求，当用户通过浏览器请求某个网址时，显示登录的对话框：另外一个是响应POST请求， 。用户以POST 方式向服务器发送自己的用户名和密码，该视图函数接收到后，判断其是否为本站用户，如果是就许可登录，否则拒绝。如下图所示就是登录的视图函数的执行过程。
+from django.shortcuts import render
+from django.http import HttpResponse, HttpResponseRedirect
+from django.contrib.auth import authenticate, login  #内置的用户认证和管理的两个方法
+from .forms import LoginForm
+
+
+def user_login(request):
+	if request.method == "POST":
+		login_form = LoginForm(request.POST)
+		if login_form.is_valid():
+			cd = login_form.cleaned_data
+			user = authenticate(username=cd['username'], password=cd['password'])
+			if user:
+				login(request,user)
+				return HttpResponse("Wellcome You. You have been authenticated successfully.")
+			else:
+				return HttpResponse("Sorry, Your username or password is not right.")
+		else:
+			return HttpResponse("Invalid login")
+
+	if request.method == "GET":
+		login_form = LoginForm()
+		return render(request, "account/login.html", {"form":login_form})
+request.GET 得到一个类字典对象。比如客户端发出hhttp://www.itdiffer.com/?name =canglaoshi&course=28 的GET请求，也就是在URL中访问该地址，这个请求其实携带了两个参数及其值， 即name=canglaoshi 和course =28 ，两个参数之间用＆符号连接。请求发出后， Django 就通过request.GET 得到两个参数及其值，结果是类字典对象。
+GET 多用于数据查询，而POST 多用于数据写入或者更新,通过request.POST 得到提交的表单数据，也是一个类字典对象。
+authenticate()函数其作用是检验此用户是否为本网站项目的用户，以及其密码是否正确。如果都对上号了，就返回User 的一个实例对象，否则返回None 。在
+login（）函数，以语句所得到的User实例对象作为参数， 实现用户登录。用户登录之后， Django会自动调用默认的session 应用，将用户ID 保存在session中，完成用户登录操作。
+2.2.4 登录的前踹界面
+CSRF (Cross-Site RequestForgery ），中文名称是跨站请求伪造，也被称为one click attack/session riding ，简而言之就是攻击者盗用了用户的身份，以用户的名义发送恶意请求，导致的不良后果读者可以想象一下。Django 作为一个负责任的框架，内置了一个CSRF 中间件， 请读者打开./mysite/settings.py 文件，虽然前面在这里进行两次配置应用了，但对于MIDDLEWARE 其中有一个参数django.middleware.csrf.CsrfViewMiddleware ，有了这个中间件，就能保证叫django免受csrf攻击了。如果前端通过POST 方式提交数据，就会被禁止，而POST 数据又是必不可少的，解决方法之一就是在表单中使用｛% csrf_token %｝，与表单内容一同被提交。
+2.2.5 知识点
+1. 内置用户权限管理
+https://docs.djangoproject.com/en/1.11/topics/auth/
+2. 表单的请求晌应过程
+(1)）用户通过自己的浏览器（客户端）第一次向服务器发出含有表单页面的请求， Django会创建一个未绑定数据的表单实例（例如form= LoginForm(), form 实例就是未绑定实例），然后反馈到前端页面， 等待用户填写内容。
+(2)用户在客户端填写了表单内容之后，将其提交给服务器，在Django 的视圈中接收数据,例如form= LoginForm(request.POST)，然后验证表单数据(form.is_valid()) 。
+(3）通过表单验证之后，可以对表单进行进一步操作，例如保存、URL 转向等。结束之后，本次表单提交过程完毕。
+(4）如果没有通过表单验证，就要返回绑定表单实例（携带已经提交的数据和错误信息），让用户修改之后再次提交。
+2.3 用内置1方法实现登录和退出
+2.3.1 内重的登录方法
+login()
+2.3.2 判断用户是否登录
+2.3.4 知识点
+1 . HttpRequest 对象:当客户端向服务器发送请求时， Django 会创建一个包含请求数据的HttpRequest 对象， 并以参数request 传给视图函数，即参数request 所引用的对象就是HttpRequest 对象。
+• path： 返回一个字符串，表示请求页面的路径（不包括域名〉，例如“ /blog/admin/”。
+• GET：返回类字典对象，包括所有的HTTP GET 参数。
+• POST： 返回类字典对象， 包括所有的HttPPOST 参数。注意，不包括上传文件信息。
+• REQUEST ： 返回类字典对象， 包括所有POST 和GET 数据（先POST，后GET：在项目实践中，不推荐使用这个属性获得对象数据，使用GET、POST 更清晰）。
+• FILES ： 返回类字典对象，包含所有的上传文件， 每个键是<input type＝"file" name＝"" />中name 的值，每个值是一个Python 字典，该字典有以下三个键：①filename ，上传文件的文件名： ② content-type ，上传文件的内容类型：③ content，上传文件的原始内容。注意FILES 只有在请求方式为POST 并且表单包括enctype="multipart/ form-data，， 属性时才会有数据，否则FILES 就是一个空的类似宇典的对象。
+• COOKIES ： 返回字典，包括所有的cookie 键值对。
+• META ：返回字典，包含所有可能的HTTP 头。
+• user：返回django.contrib.auth.users.User对象， 表示当前登录用户。如果当前没有用户登录， user被设置成战jango.contrib.auth.models.AnonymousUser 的一个实例，可以用is_anonymous（）来区分登录用户和未登录用户，
+• session： 返回可读写的类字典对象， 表示当前的session 。
+2. HttpResponse 对象
+对应着HttpRequest 对象， HtψResponse 是视图向客户端返回的对象。
+2.4 用户注册
+from django import forms
+from django.contrib.auth.models import User
+
+
+class RegistrationForm(forms.ModelForm):
+    password = forms.CharField(label="Password", widget=forms.PasswordInput)
+    password2 = forms.CharField(label="Confirm Pssword", widget=forms.PasswordInput)
+
+    class Meta:
+        model = User    #声明本表单类所应用的数据模型
+        fields = ("username", "email") #表单的内容会写入到哪个数据库表中的哪些记录里面,表单类中的属性和数据模型类中的属性一一对应，
+
+    def clean_password2(self):    
+        cd = self.cleaned_data
+        if cd['password'] != cd['password2']:
+            raise forms.ValidationError("passwords do not match.")
+        return cd['password2']
+一般情况下，如果要将表单中的数据写入数据库表或者修改某些记录的值，就要让表单类继承ModelForm 类：如果提交表单之后，不会对数据库进行修改，则继承Form类。
+检查的动作在我们调用表单实例对象的is_valid（）方法时会被执行。以“ clean ＋属性名称”命名方式所创建的方法，都有类似的功能。
+def register(request):
+    if request.method == "POST":
+        user_form = RegistrationForm(request.POST)
+        if user_form.is_valid():
+            new_user = user_form.save(commit=False)  ①  
+            new_user.set_password(user_form.cleaned_data['password'])   ②
+            new_user.save()
+            return HttpResponse("successfully")
+        else:
+            return HttpResponse("sorry, your can not register.")
+    else:
+        user_form = RegistrationForm()
+        return render(request, "account/register.html", {"form": user_form})
+ModelForm 类或者它的子类都具有save()方法，它的效果是将表单数据保存到数据库，并生成该数据对象。但是，语句①应用此方法时，在参数里多了commit=False ， 其结果是数据并没有被保存到数据库，而仅生成了一个数据对象。紧接着看后面两旬，语句②设置了该数据对象的密码（这个密码是经过校验的），这个操作得益于前面commit=False的设置，如果没有此参数，数据被写到数据库中了，再设置密码就需要重新写入，稍显浪费且慢了。
+2.4 .2 增加注册内容
+对于注册的过程，不同的网站有不同的需要，所以Dj ango 并没有像登录、退出那样设置一个内置的方法，这就给开发者留下了很多发挥的空间，比如针对前面的注册过程，如果觉得仅让用户在注册时填写用户名、邮箱和密码有点简单，那么还可增加其他的项目，在默认的User数据模型中还有用户姓氏、名字等。如果要增加，可以在表单类的内部类fie lds 的值中继续增加属性（数据库表的字段〉名称。
+但是， 要增加一个User 数据模型中没有的宇段（比如手机号）该怎么办？
+为了满足这个需求， 首先要有数据模型。于是，编辑./ccount 中的models. py 文件， 并在其中输入如下代码。
+2.4.3 管理新增的注册内容
+http://django-registration.readthedocs.io/en/2.0.4/install.html
+https://github.com/omab/django-social-auth 社交媒体登录Django
+
+
+
+
